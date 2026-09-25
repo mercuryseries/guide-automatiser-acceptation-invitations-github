@@ -6,13 +6,12 @@
 3. [Script Python automatisé](#script-python-automatisé)
 4. [Utilisation du script](#utilisation-du-script)
 5. [Dépannage](#dépannage)
-6. [Suppression des invitations expirées](#suppression-des-invitations-expirées)
 
 ---
 
 ## Installation des outils nécessaires
 
-### 1. Installer GitHub CLI (optionnel mais recommandé)
+### 1. Installer GitHub CLI
 
 Visitez https://cli.github.com/ et suivez les instructions d'installation en fonction de votre système.
 
@@ -39,7 +38,7 @@ github_invitations\Scripts\activate
 **Installer les dépendances :**
 ```bash
 # Une fois l'environnement virtuel activé
-pip install requests PyGithub
+pip install requests==2.34.2 PyGithub==2.10.0
 ```
 
 **Note :** Vous devrez activer l'environnement virtuel à chaque fois que vous voulez utiliser le script :
@@ -55,35 +54,13 @@ github_invitations\Scripts\activate
 
 ## Configuration du token d'accès
 
-### Option 1 : Via GitHub CLI (recommandée)
-
 ```bash
 gh auth login
 # Suivez les instructions interactives
-# Choisissez "GitHub.com" → "HTTPS" → "Yes" pour authentification
-```
-
-### Option 2 : Créer un token manuellement
-
-1. **GitHub.com** → Votre avatar → **Settings**
-2. **Developer settings** → **Personal access tokens** → **Tokens (classic)**
-3. **Generate new token (classic)**
-4. Nom : "Acceptation invitations cours"
-5. Scopes : Cocher **`repo`** (Full control of private repositories)
-6. **Generate token**
-7. **⚠️ Copiez le token (c'est la seule fois qu'il sera affiché)**
-
-**Puis configurez la variable d'environnement :**
-
-```bash
-# Linux/Mac
-export GITHUB_TOKEN="ghp_votre_token_ici"
-
-# Windows PowerShell
-$env:GITHUB_TOKEN="ghp_votre_token_ici"
-
-# Windows CMD
-set GITHUB_TOKEN=ghp_votre_token_ici
+# Choisissez "GitHub.com" → "HTTPS" → "Y" pour "Authenticate Git with your GitHub credentials?"
+# → "Login with a web browser" -> Appuyez sur la touche <Entrée> 
+# -> Entrez le One-time code affiché dans la console dans votre navigateur 
+# -> "Authorize GitHub" 🎉
 ```
 
 ---
@@ -226,22 +203,7 @@ if __name__ == "__main__":
 python accepter_invitations.py
 ```
 
-### 2. Le script va automatiquement :
-
-1. **Chercher votre token** dans cet ordre :
-   - Variable d'environnement `GITHUB_TOKEN`
-   - GitHub CLI (`gh auth token`)
-   - Vous demander de le saisir manuellement
-
-2. **Valider le token** en testant une connexion à GitHub
-
-3. **Lister toutes les invitations** en attente
-
-4. **Accepter automatiquement** toutes les invitations
-
-5. **Afficher un résumé** des actions effectuées
-
-### 3. Exemple de sortie
+### 2. Exemple de sortie
 
 ```
 Automatisation des invitations GitHub
@@ -275,12 +237,10 @@ Automatisation des invitations GitHub
 ## Dépannage
 
 ### Erreur "Token invalide"
-- Vérifiez que votre token a les permissions `repo`
-- Si vous utilisez GitHub CLI, relancez `gh auth login`
+- Relancez `gh auth login`
 
 ### Erreur "GitHub CLI non trouvé"
 - Vérifiez l'installation avec `gh --version`
-- Ou configurez manuellement la variable `GITHUB_TOKEN`
 
 ### Erreur de connexion
 - Vérifiez votre connexion internet
@@ -289,49 +249,6 @@ Automatisation des invitations GitHub
 ### Le script ne trouve aucune invitation
 - Les invitations peuvent avoir expiré (après 7 jours)
 - Vérifiez manuellement sur GitHub.com
-
----
-
-## Suppression des invitations expirées
-
-### Supprimer toutes les invitations en attente
-
-```bash
-# ATTENTION: Supprime TOUTES les invitations en attente
-gh api user/repository_invitations --jq '.[].id' | xargs -I {} gh api -X DELETE user/repository_invitations/{}
-```
-
-### Approche sélective
-
-```bash
-# Voir les invitations avec détails
-gh api user/repository_invitations --jq '.[] | {id, repo: .repository.name, created: .created_at}'
-
-# Supprimer les invitations plus anciennes qu'une date spécifique
-gh api user/repository_invitations --jq '.[] | select(.created_at < "2025-01-01") | .id' | xargs -I {} gh api -X DELETE user/repository_invitations/{}
-```
-
-### Version interactive
-
-```bash
-# Créer un fichier de révision
-gh api user/repository_invitations --jq '.[] | "\(.id) - \(.repository.name) - Created: \(.created_at)"' > invitations.txt
-
-# Réviser le fichier
-cat invitations.txt
-
-# Supprimer par ID (remplacer par les vrais IDs)
-echo "12345678 87654321" | tr ' ' '\n' | xargs -I {} gh api -X DELETE user/repository_invitations/{}
-```
-
----
-
-## Bonnes pratiques de sécurité
-
-- ⚠️ **Ne partagez jamais votre token**
-- ⚠️ **Ne le commitez pas dans Git**
-- ⚠️ **Définissez une date d'expiration** (30-90 jours recommandé)
-- ⚠️ **Révoquez le token quand vous n'en avez plus besoin**
 
 ---
 
